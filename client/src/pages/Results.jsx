@@ -13,6 +13,7 @@ export default function Results() {
   }
 
   const { rating, feedbackText, sentiment, sentimentScore, category, emotion, userFeelingExplanation, keywords, summary } = resultData;
+  const safeKeywords = Array.isArray(keywords) ? keywords : (typeof keywords === 'string' ? JSON.parse(keywords) : []);
 
   const sentimentColor = 
     sentiment === 'Positive' ? 'text-success' : 
@@ -93,12 +94,12 @@ export default function Results() {
                 <Tag className="w-4 h-4" /> Extracted Keywords
               </h3>
               <div className="flex flex-wrap gap-2">
-                {keywords?.map((kw, i) => (
+                {safeKeywords.map((kw, i) => (
                   <span key={i} className="px-3 py-1.5 bg-primaryAcc/20 text-primaryAcc border border-primaryAcc/30 rounded-full text-sm">
                     #{kw}
                   </span>
                 ))}
-                {(!keywords || keywords.length === 0) && <span className="text-gray-500 text-sm">No keywords extracted</span>}
+                {safeKeywords.length === 0 && <span className="text-gray-500 text-sm">No keywords extracted</span>}
               </div>
             </div>
           </div>

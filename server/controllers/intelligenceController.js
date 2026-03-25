@@ -1,25 +1,12 @@
-import Feedback from '../models/Feedback.js';
+import { getDb } from '../db.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import mongoose from 'mongoose';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'mock_key');
 
 export const getAnomalyReport = async (req, res, next) => {
   try {
-    let rawData = [];
-
-    // Fallback Mock Logic
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(200).json({
-        anomalies: [
-          { type: 'Sentiment Spike', severity: 'High', description: 'Simulated 400% spike in negative sentiment natively originating from the Amazon simulator webhook.' },
-          { type: 'Recurring Issue', severity: 'Medium', description: 'Multiple CSV dataset imports report consistent "Login Timeouts" across the last 30 days.' }
-        ]
-      });
-    }
+    const db = getDb();
 
     // Pull last 100 global records across all isolated platforms
-    rawData = await Feedback.find().sort({ createdAt: -1 }).limit(100);
+    const rawData = await db.all('SELECT * FROM feedbacks ORDER BY createdAt DESC LIMIT 100');
 
     if (rawData.length < 5) {
       return res.status(200).json({ anomalies: [] });
@@ -31,14 +18,14 @@ export const getAnomalyReport = async (req, res, next) => {
     const stdDev = Math.sqrt(scores.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / scores.length) || 1;
     
     // Isolate true statistical anomalies (Z-Score > 1.5 or < -1.5)
-    // Z-Score = (X - μ) / σ
     const absoluteAnomalies = rawData.filter(r => Math.abs((r.sentimentScore - mean) / stdDev) > 1.5);
 
     if (absoluteAnomalies.length === 0) {
       return res.status(200).json({ anomalies: [] }); // No mathematical anomalies detected
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const prompt = `
       You are an expert Cybersecurity & Data Analyst. 
       My custom Mathematics Engine has computed standard deviations and explicitly isolated the following ${absoluteAnomalies.length} extreme statistical anomalies from the database (Z-Score > 1.5).
@@ -66,7 +53,7 @@ export const getAnomalyReport = async (req, res, next) => {
   } catch (error) {
      return res.status(200).json({
         anomalies: [
-          { type: 'AI Subsystem Offline', severity: 'High', description: 'Could not dynamically compute live anomalies due to API rate constraints. Displaying Mock Security Error.' }
+          { type: 'AI Subsystem Offline', severity: 'High', description: 'Could not dynamically compute live anomalies or API parsing failed.' }
         ]
       });
   }

@@ -3,7 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
+import { initDb } from './db.js';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import rateLimit from 'express-rate-limit';
@@ -13,7 +13,7 @@ import integrationRoutes from './routes/integrationRoutes.js';
 import intelligenceRoutes from './routes/intelligenceRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
 import logger from './utils/logger.js';
-import User from './models/User.js';
+
 
 dotenv.config();
 
@@ -61,7 +61,7 @@ app.use('/api/v1/health', healthRoutes);
 
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/dist')));
-  app.get('*', (req, res) => {
+  app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
   });
 }
@@ -74,24 +74,9 @@ app.use((err, req, res, next) => {
   });
 });
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/feedbackDB')
-  .then(async () => {
-    logger.info('Connected to MongoDB');
-    try {
-      const adminExists = await User.findOne({ email: 'admin@test.com' });
-      if (!adminExists) {
-         await User.create({ email: 'admin@test.com', password: 'admin123', role: 'admin' });
-         logger.info('✅ Default Admin account created (admin@test.com / admin123)');
-      }
-
-      const viewerExists = await User.findOne({ email: 'viewer@test.com' });
-      if (!viewerExists) {
-         await User.create({ email: 'viewer@test.com', password: 'viewer123', role: 'viewer' });
-         logger.info('✅ Default Viewer account created (viewer@test.com / viewer123)');
-      }
-    } catch(err) { logger.error(`Database seed failed: ${err.message}`); }
-  })
-  .catch((err) => logger.warn(`MongoDB connection error details (Mock RAM DB will be used): ${err.message}`));
+initDb()
+  .then(() => logger.info('✅ Connected to SQLite database (database.sqlite)'))
+  .catch(err => logger.error(`Database initialization failed: ${err.message}`));
 
 io.on('connection', (socket) => {
   logger.info('🟢 New Client Socket Connected');

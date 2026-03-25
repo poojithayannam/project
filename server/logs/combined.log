@@ -83,3 +83,46 @@
 [2026-03-25 02:16:23] info: 🟢 New Client Socket Connected
 [2026-03-25 02:16:29] info: 🔴 Client Socket Disconnected
 [2026-03-25 02:22:04] info: WebSocket Server running on port 5000
+[2026-03-26 01:34:31] info: WebSocket Server running on port 5000
+[2026-03-26 01:35:01] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-26 01:44:42] info: WebSocket Server running on port 5000
+[2026-03-26 01:45:12] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-26 01:45:30] info: WebSocket Server running on port 5000
+[2026-03-26 01:45:39] info: WebSocket Server running on port 5000
+[2026-03-26 01:46:04] info: WebSocket Server running on port 5000
+[2026-03-26 01:46:28] info: WebSocket Server running on port 5000
+[2026-03-26 01:46:58] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-26 01:47:17] info: WebSocket Server running on port 5000
+[2026-03-26 01:47:19] info: WebSocket Server running on port 5000
+[2026-03-26 01:47:49] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-26 01:52:17] info: WebSocket Server running on port 5000
+[2026-03-26 01:52:47] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-26 01:54:53] info: WebSocket Server running on port 5000
+[2026-03-26 01:55:23] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-26 01:55:52] info: WebSocket Server running on port 5000
+[2026-03-26 01:56:22] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-26 01:57:32] info: 🟢 New Client Socket Connected
+[2026-03-26 01:58:20] info: 🔴 Client Socket Disconnected
+[2026-03-26 01:59:08] info: WebSocket Server running on port 5000
+[2026-03-26 01:59:17] info: 🟢 New Client Socket Connected
+[2026-03-26 01:59:38] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-26 02:15:16] info: WebSocket Server running on port 5000
+[2026-03-26 02:15:16] info: ✅ Connected to SQLite database (database.sqlite)
+[2026-03-26 02:15:20] info: 🟢 New Client Socket Connected
+[2026-03-26 02:16:28] info: 🔴 Client Socket Disconnected
+[2026-03-26 02:17:38] info: WebSocket Server running on port 5000
+[2026-03-26 02:17:38] info: ✅ Connected to SQLite database (database.sqlite)
+[2026-03-26 02:19:00] info: 🟢 New Client Socket Connected
+[2026-03-26 02:19:09] info: 🔴 Client Socket Disconnected
+[2026-03-26 02:20:56] info: WebSocket Server running on port 5000
+[2026-03-26 02:20:56] info: ✅ Connected to SQLite database (database.sqlite)
+[2026-03-26 02:21:50] info: 🟢 New Client Socket Connected
+[2026-03-26 02:22:04] info: 🔴 Client Socket Disconnected
+[2026-03-26 02:24:30] info: WebSocket Server running on port 5000
+[2026-03-26 02:24:30] error: Database initialization failed: SQLITE_CONSTRAINT: UNIQUE constraint failed: integrations.apiKey
+[2026-03-26 02:24:32] info: WebSocket Server running on port 5000
+[2026-03-26 02:24:32] error: Database initialization failed: SQLITE_CONSTRAINT: UNIQUE constraint failed: integrations.apiKey
+[2026-03-26 02:27:19] info: 🟢 New Client Socket Connected
+[2026-03-26 02:27:36] info: 🔴 Client Socket Disconnected
+[2026-03-26 02:27:39] info: 🟢 New Client Socket Connected
+[2026-03-26 02:27:40] info: 🔴 Client Socket Disconnected

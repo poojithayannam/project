@@ -1,0 +1,2 @@
+[2026-03-26 01:01:39] info: WebSocket Server running on port 5000
+[2026-03-26 01:02:09] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017

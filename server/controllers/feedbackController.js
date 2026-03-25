@@ -1,9 +1,6 @@
-import Feedback from '../models/Feedback.js';
 import { analyzeFeedbackWithGemini, getBusinessRecommendations } from '../services/geminiService.js';
-import mongoose from 'mongoose';
-
-// Fallback Memory Data array
-export const memoryDb = [];
+import { getDb } from '../db.js';
+import logger from '../utils/logger.js';
 
 export const createFeedback = async (req, res, next) => {
   try {
@@ -18,35 +15,33 @@ export const createFeedback = async (req, res, next) => {
     if (trimmedText.length > 2000) return res.status(400).json({ error: 'Feedback exceeds the maximum allowed length.' });
 
     const aiAnalysis = await analyzeFeedbackWithGemini(trimmedText, submittedCategory);
-
-    const payload = {
-      feedbackText: trimmedText,
-      rating,
-      category: submittedCategory,
-      platform: 'Direct',
-      sentiment: aiAnalysis.sentiment || 'Neutral',
-      sentimentScore: aiAnalysis.sentimentScore || 50,
-      emotion: aiAnalysis.emotion || 'Unknown',
-      userFeelingExplanation: aiAnalysis.userFeelingExplanation || 'No detailed explanation provided',
-      keywords: aiAnalysis.keywords || [],
-      summary: aiAnalysis.summary || 'Summary unavailable'
-    };
-
-    if (mongoose.connection.readyState !== 1) {
-      const mockDocument = { _id: Date.now().toString(), createdAt: new Date(), ...payload };
-      memoryDb.push(mockDocument);
-      if (req.io) req.io.emit('new_feedback_received');
-      return res.status(201).json(mockDocument);
-    }
-
-    const newFeedback = new Feedback(payload);
-    await newFeedback.save();
     
-    // Broadcast instantly to all connected dashboards via WebSocket
+    const db = getDb();
+    const result = await db.run(`
+      INSERT INTO feedbacks (feedbackText, rating, category, platform, sentiment, sentimentScore, emotion, userFeelingExplanation, keywords, summary) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      trimmedText,
+      rating,
+      submittedCategory,
+      'Direct',
+      aiAnalysis.sentiment || 'Neutral',
+      aiAnalysis.sentimentScore || 50,
+      aiAnalysis.emotion || 'Unknown',
+      aiAnalysis.userFeelingExplanation || 'No detailed explanation provided',
+      JSON.stringify(aiAnalysis.keywords || []),
+      aiAnalysis.summary || 'Summary unavailable'
+    ]);
+
+    const newFeedback = await db.get('SELECT * FROM feedbacks WHERE id = ?', [result.lastID]);
+    newFeedback._id = newFeedback.id; // Map _id for frontend compatibility
+    try {
+      newFeedback.keywords = JSON.parse(newFeedback.keywords);
+    } catch(e) { newFeedback.keywords = []; }
+
     if (req.io) req.io.emit('new_feedback_received');
     
     res.status(201).json(newFeedback);
-
   } catch (error) {
     next(error);
   }
@@ -54,83 +49,48 @@ export const createFeedback = async (req, res, next) => {
 
 export const getAnalytics = async (req, res, next) => {
   try {
+    const db = getDb();
     const { category, platform, timeRange } = req.query;
-    const matchStage = {};
-    if (category && category !== 'All') matchStage.category = category;
-    if (platform && platform !== 'All') matchStage.platform = platform;
+    
+    let whereClause = '1=1';
+    let params = [];
+    
+    if (category && category !== 'All') { whereClause += ' AND category = ?'; params.push(category); }
+    if (platform && platform !== 'All') { whereClause += ' AND platform = ?'; params.push(platform); }
     
     if (timeRange && timeRange !== 'All') {
-      const dateLimit = new Date();
-      if (timeRange === '7d') dateLimit.setDate(dateLimit.getDate() - 7);
-      if (timeRange === '30d') dateLimit.setDate(dateLimit.getDate() - 30);
-      matchStage.createdAt = { $gte: dateLimit };
+      let days = timeRange === '7d' ? 7 : 30;
+      whereClause += ` AND createdAt >= datetime('now', '-${days} days')`;
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      let filteredDb = memoryDb;
-      if (category && category !== 'All') filteredDb = filteredDb.filter(f => f.category === category);
-      if (platform && platform !== 'All') filteredDb = filteredDb.filter(f => f.platform === platform);
-      if (timeRange && timeRange !== 'All') {
-        const dateLimit = new Date();
-        if (timeRange === '7d') dateLimit.setDate(dateLimit.getDate() - 7);
-        if (timeRange === '30d') dateLimit.setDate(dateLimit.getDate() - 30);
-        filteredDb = filteredDb.filter(f => new Date(f.createdAt) >= dateLimit);
-      }
-      
-      const sentimentCounts = [
-        { _id: 'Positive', count: filteredDb.filter(f => f.sentiment === 'Positive').length },
-        { _id: 'Neutral', count: filteredDb.filter(f => f.sentiment === 'Neutral').length },
-        { _id: 'Negative', count: filteredDb.filter(f => f.sentiment === 'Negative').length }
-      ].filter(c => c.count > 0);
-
-      const emotionMap = {};
-      filteredDb.forEach(f => { emotionMap[f.emotion] = (emotionMap[f.emotion] || 0) + 1; });
-      let topEmotion = null;
-      const sortedEmotions = Object.entries(emotionMap).sort((a,b) => b[1]-a[1]);
-      if (sortedEmotions.length > 0) topEmotion = { _id: sortedEmotions[0][0], count: sortedEmotions[0][1] };
-
-      const keywordMap = {};
-      filteredDb.forEach(f => {
-        if (f.keywords) f.keywords.forEach(kw => { keywordMap[kw] = (keywordMap[kw] || 0) + 1; });
-      });
-      const keywordFreq = Object.entries(keywordMap).sort((a,b) => b[1]-a[1]).slice(0,5).map(arr => ({ _id: arr[0], count: arr[1] }));
-      
-      const platformMap = {};
-      filteredDb.forEach(f => { platformMap[f.platform] = (platformMap[f.platform] || { count: 0, score: 0 }); platformMap[f.platform].count++; platformMap[f.platform].score += (f.sentimentScore || 50); });
-      const platformBreakdown = Object.entries(platformMap).sort((a,b) => b[1].count-a[1].count).map(arr => ({ _id: arr[0], count: arr[1].count, avgScore: Math.round(arr[1].score / arr[1].count) }));
-
-      const timeline = filteredDb.slice(-10).map(f => ({
-        date: new Date(f.createdAt).toLocaleDateString(),
-        score: f.sentimentScore
-      }));
-
-      const recentFeedbacks = filteredDb.slice(-20).map(f => ({
-        id: f._id,
-        text: f.feedbackText,
-        sentiment: f.sentiment,
-        rating: f.rating || 5,
-        category: f.category,
-        platform: f.platform || 'Direct',
-        date: new Date(f.createdAt).toLocaleString()
-      })).reverse();
-
-      return res.json({ sentimentCounts, topEmotion, keywordFreq, timeline, platformBreakdown, forecast: 50, historicalDelta: 0, currentAvg: 50, recentFeedbacks });
-    }
-
-    const sentimentCounts = await Feedback.aggregate([ { $match: matchStage }, { $group: { _id: '$sentiment', count: { $sum: 1 } } } ]);
-    const topEmotion = await Feedback.aggregate([ { $match: matchStage }, { $group: { _id: '$emotion', count: { $sum: 1 } } }, { $sort: { count: -1 } }, { $limit: 1 } ]);
-    const keywordFreq = await Feedback.aggregate([ { $match: matchStage }, { $unwind: '$keywords' }, { $group: { _id: '$keywords', count: { $sum: 1 } } }, { $sort: { count: -1 } }, { $limit: 5 } ]);
+    // Sentiment Counts
+    const sentimentQ = await db.all(`SELECT sentiment as _id, count(*) as count FROM feedbacks WHERE ${whereClause} GROUP BY sentiment`, params);
     
-    // Abstracted Engine Mapping Average Platform Scores
-    const platformBreakdown = await Feedback.aggregate([
-      { $match: matchStage },
-      { $group: { _id: '$platform', count: { $sum: 1 }, avgScore: { $avg: '$sentimentScore' } } },
-      { $sort: { count: -1 } }
-    ]);
+    // Top Emotion
+    const emotionQ = await db.get(`SELECT emotion as _id, count(*) as count FROM feedbacks WHERE ${whereClause} GROUP BY emotion ORDER BY count DESC LIMIT 1`, params);
 
-    const timelineRaw = await Feedback.find(matchStage).sort({ createdAt: -1 }).limit(10).select('createdAt sentimentScore');
+    // Platform Breakdown
+    const platformQ = await db.all(`
+      SELECT platform as _id, count(*) as count, AVG(sentimentScore) as avgScore 
+      FROM feedbacks WHERE ${whereClause} GROUP BY platform ORDER BY count DESC
+    `, params);
+    const platformBreakdown = platformQ.map(p => ({ ...p, avgScore: Math.round(p.avgScore) }));
+
+    // Keywords Freq (requires pulling all matches mapping in node)
+    const keywordsRaw = await db.all(`SELECT keywords FROM feedbacks WHERE ${whereClause}`, params);
+    const keywordMap = {};
+    keywordsRaw.forEach(row => {
+      try {
+        const kws = JSON.parse(row.keywords || '[]');
+        kws.forEach(kw => { keywordMap[kw] = (keywordMap[kw] || 0) + 1; });
+      } catch (e) {}
+    });
+    const keywordFreq = Object.entries(keywordMap).sort((a,b) => b[1]-a[1]).slice(0,5).map(arr => ({ _id: arr[0], count: arr[1] }));
+
+    // Timeline
+    const timelineRaw = await db.all(`SELECT createdAt, sentimentScore FROM feedbacks WHERE ${whereClause} ORDER BY createdAt DESC LIMIT 10`, params);
     const timeline = timelineRaw.reverse().map(item => ({
-      date: item.createdAt.toLocaleDateString(),
+      date: new Date(item.createdAt).toLocaleDateString(),
       score: item.sentimentScore
     }));
 
@@ -146,19 +106,19 @@ export const getAnalytics = async (req, res, next) => {
     }
 
     // Historical Performance Differential Engine
-    const current7 = new Date(); current7.setDate(current7.getDate() - 7);
-    const previous7 = new Date(); previous7.setDate(previous7.getDate() - 14);
+    let currentAvg = 0; let prevAvg = 0; let historicalDelta = 0;
+    
+    const curAvgQ = await db.get(`SELECT AVG(sentimentScore) as avgScore FROM feedbacks WHERE ${whereClause} AND createdAt >= datetime('now', '-7 days')`, params);
+    const prevAvgQ = await db.get(`SELECT AVG(sentimentScore) as avgScore FROM feedbacks WHERE ${whereClause} AND createdAt >= datetime('now', '-14 days') AND createdAt < datetime('now', '-7 days')`, params);
+    
+    currentAvg = curAvgQ?.avgScore || 0;
+    prevAvg = prevAvgQ?.avgScore || 0;
+    historicalDelta = prevAvg === 0 ? 0 : ((currentAvg - prevAvg) / prevAvg) * 100;
 
-    const currentPeriodAvg = await Feedback.aggregate([ { $match: { ...matchStage, createdAt: { $gte: current7 } } }, { $group: { _id: null, avgScore: { $avg: '$sentimentScore' } } } ]);
-    const previousPeriodAvg = await Feedback.aggregate([ { $match: { ...matchStage, createdAt: { $gte: previous7, $lt: current7 } } }, { $group: { _id: null, avgScore: { $avg: '$sentimentScore' } } } ]);
-
-    const currentAvg = currentPeriodAvg[0]?.avgScore || 0;
-    const prevAvg = previousPeriodAvg[0]?.avgScore || 0;
-    const historicalDelta = prevAvg === 0 ? 0 : ((currentAvg - prevAvg) / prevAvg) * 100;
-
-    const recentFeedbacksDocs = await Feedback.find(matchStage).sort({ createdAt: -1 }).limit(20);
+    // Recent Feedbacks
+    const recentFeedbacksDocs = await db.all(`SELECT * FROM feedbacks WHERE ${whereClause} ORDER BY createdAt DESC LIMIT 20`, params);
     const recentFeedbacks = recentFeedbacksDocs.map(f => ({
-        id: f._id,
+        id: f.id,
         text: f.feedbackText,
         sentiment: f.sentiment,
         rating: f.rating || 5,
@@ -168,8 +128,8 @@ export const getAnalytics = async (req, res, next) => {
     }));
 
     res.json({ 
-      sentimentCounts, 
-      topEmotion: Array.isArray(topEmotion) && topEmotion.length > 0 ? topEmotion[0] : topEmotion, 
+      sentimentCounts: sentimentQ, 
+      topEmotion: emotionQ || null, 
       keywordFreq, 
       timeline, 
       platformBreakdown, 
@@ -185,32 +145,29 @@ export const getAnalytics = async (req, res, next) => {
 
 export const getRecommendations = async (req, res, next) => {
   try {
+    const db = getDb();
     const { category } = req.query;
-    const matchStage = (category && category !== 'All') ? { category } : {};
     
-    let recentFeedbacks = [];
-    if (mongoose.connection.readyState !== 1) {
-      const filteredDb = (category && category !== 'All') ? memoryDb.filter(f => f.category === category) : memoryDb;
-      recentFeedbacks = filteredDb.slice(-30).map(f => ({ text: f.feedbackText, sentiment: f.sentiment }));
-    } else {
-      recentFeedbacks = await Feedback.find(matchStage).sort({ createdAt: -1 }).limit(30).select('feedbackText sentiment -_id');
-    }
-
-    if (recentFeedbacks.length === 0) {
+    let whereClause = '1=1';
+    let params = [];
+    if (category && category !== 'All') { whereClause += ' AND category = ?'; params.push(category); }
+    
+    const recentDb = await db.all(`SELECT feedbackText as text, sentiment FROM feedbacks WHERE ${whereClause} ORDER BY createdAt DESC LIMIT 30`, params);
+    
+    if (recentDb.length === 0) {
       return res.json({ recommendations: [{ title: 'Insufficient Data', description: 'Not enough feedback to generate trends.', impact: 'Low' }]});
     }
 
-    const aiInsights = await getBusinessRecommendations(recentFeedbacks);
+    const aiInsights = await getBusinessRecommendations(recentDb);
     res.json(aiInsights);
   } catch (error) {
     next(error);
   }
 };
 
-import logger from '../utils/logger.js';
-
 const backgroundBatchProcessor = async (reviews, assignedCategory, assignedPlatform, reqIo) => {
   try {
+    const db = getDb();
     const processedPayloads = [];
     const chunkArray = (arr, size) => Array.from({ length: Math.ceil(arr.length / size) }, (v, i) => arr.slice(i * size, i * size + size));
     const batches = chunkArray(reviews, 10);
@@ -232,7 +189,7 @@ const backgroundBatchProcessor = async (reviews, assignedCategory, assignedPlatf
           sentimentScore: aiAnalysis.sentimentScore || 50,
           emotion: aiAnalysis.emotion || 'Unknown',
           userFeelingExplanation: aiAnalysis.userFeelingExplanation || 'No explanation generated',
-          keywords: aiAnalysis.keywords || [],
+          keywords: JSON.stringify(aiAnalysis.keywords || []),
           summary: aiAnalysis.summary || 'Summary unavailable'
         };
       });
@@ -241,14 +198,14 @@ const backgroundBatchProcessor = async (reviews, assignedCategory, assignedPlatf
       processedPayloads.push(...batchResults.filter(Boolean));
     }
 
-    if (mongoose.connection.readyState !== 1) {
-       const mockDocs = processedPayloads.map(p => ({ _id: Date.now().toString() + Math.random().toString(), createdAt: new Date(), ...p }));
-       memoryDb.push(...mockDocs);
-       if (reqIo) reqIo.emit('new_feedback_received');
-       return;
+    for (const p of processedPayloads) {
+        await db.run(
+          `INSERT INTO feedbacks (feedbackText, rating, category, platform, sentiment, sentimentScore, emotion, userFeelingExplanation, keywords, summary) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [p.feedbackText, p.rating, p.category, p.platform, p.sentiment, p.sentimentScore, p.emotion, p.userFeelingExplanation, p.keywords, p.summary]
+        );
     }
-
-    await Feedback.insertMany(processedPayloads);
+    
     if (reqIo) reqIo.emit('new_feedback_received');
   } catch (err) {
     logger.error(`Background Job Failed: ${err.message}`);
@@ -270,7 +227,6 @@ export const processBulkFeedback = async (req, res, next) => {
     // Fire & Forget Background Worker Pipeline
     process.nextTick(() => backgroundBatchProcessor(reviews, assignedCategory, assignedPlatform, req.io));
 
-    // Instantly return 202 to circumvent Timeout / Thread Locks
     res.status(202).json({ 
       message: `Batch payload accepted. Event-Driven queue extracting ${reviews.length} nodes natively.`,
       jobId,

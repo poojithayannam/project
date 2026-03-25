@@ -364,7 +364,7 @@ export default function Dashboard() {
             <h3 className="text-xl font-bold mb-1">Sentiment Timeline</h3>
             <p className="text-xs text-gray-400 mb-6 font-medium">Tracking the fluctuating 1-100 core sentiment scores over the selected time period.</p>
             <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={[...data.timeline, { date: '7-Day Forecast', score: data.forecast, forecast: true }]}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                   <XAxis dataKey="date" stroke="#ffffff50" fontSize={12} tickMargin={10} />

@@ -1,0 +1,2 @@
+[2026-03-26 02:24:30] error: Database initialization failed: SQLITE_CONSTRAINT: UNIQUE constraint failed: integrations.apiKey
+[2026-03-26 02:24:32] error: Database initialization failed: SQLITE_CONSTRAINT: UNIQUE constraint failed: integrations.apiKey

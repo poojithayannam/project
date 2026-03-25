@@ -1,15 +1,13 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import Config from '../models/Config.js';
-import mongoose from 'mongoose';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'mock_key');
+import { getDb } from '../db.js';
 
 export const getSystemPrompt = async () => {
-  if (mongoose.connection.readyState === 1) {
-    try {
-      const customPrompt = await Config.findOne({ key: 'SYSTEM_PROMPT_V1' });
-      if (customPrompt) return customPrompt.value;
-    } catch (e) { console.error("Config fetch error:", e.message); }
+  try {
+    const db = getDb();
+    const customPrompt = await db.get('SELECT value FROM configs WHERE key = ?', ['SYSTEM_PROMPT_V1']);
+    if (customPrompt) return customPrompt.value;
+  } catch (e) {
+    console.error("Config fetch error:", e.message);
   }
   
   return `
@@ -40,7 +38,8 @@ export const analyzeFeedbackWithGemini = async (feedbackText, category = 'Genera
 
   while (attempts < maxAttempts) {
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       const basePrompt = await getSystemPrompt();
       
       const prompt = `
@@ -104,7 +103,8 @@ export const analyzeFeedbackWithGemini = async (feedbackText, category = 'Genera
 
 export const getBusinessRecommendations = async (feedbackData) => {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const prompt = `
       You are an expert Business Consultant and Data Analyst.
       Analyze the following collection of recent user feedback and identify macro-level trends.

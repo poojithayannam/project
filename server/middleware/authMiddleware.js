@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import mongoose from 'mongoose';
+
 
 export const requireAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;

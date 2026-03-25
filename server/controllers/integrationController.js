@@ -1,10 +1,7 @@
-import Integration from '../models/Integration.js';
-import Feedback from '../models/Feedback.js';
-import { memoryDb } from './feedbackController.js';
+import crypto from 'crypto';
+import { getDb } from '../db.js';
 import { normalizeFeedback } from '../services/normalizeFeedback.js';
 import { analyzeFeedbackWithGemini } from '../services/geminiService.js';
-import crypto from 'crypto';
-import mongoose from 'mongoose';
 
 export const registerPlatform = async (req, res, next) => {
   try {
@@ -12,12 +9,20 @@ export const registerPlatform = async (req, res, next) => {
     if (!platformName) return res.status(400).json({ error: 'Platform Name is required' });
 
     const apiKey = crypto.randomUUID(); // Secure unique API Key generation
-    const newIntegration = new Integration({ platformName, apiKey, category: category || 'General' });
+    const db = getDb();
     
-    await newIntegration.save();
-    res.status(201).json({ message: 'Platform registered successfully', apiKey, platformName });
+    try {
+      await db.run('INSERT INTO integrations (platformName, apiKey, category) VALUES (?, ?, ?)', [
+        platformName, apiKey, category || 'General'
+      ]);
+      res.status(201).json({ message: 'Platform registered successfully', apiKey, platformName });
+    } catch (err) {
+      if (err.message.includes('UNIQUE constraint failed')) {
+        return res.status(400).json({ error: 'Platform integration already exists.'});
+      }
+      throw err;
+    }
   } catch (error) {
-    if (error.code === 11000) return res.status(400).json({ error: 'Platform integration already exists.'});
     next(error);
   }
 };
@@ -29,19 +34,15 @@ export const receiveWebhook = async (req, res, next) => {
 
     if (!apiKey) return res.status(401).json({ error: 'API Key is absolutely required for Multi-Source external injection.' });
 
-    let integrationCategory = 'General';
-    let designatedPlatform = platform;
+    const db = getDb();
+    
+    // Case-insensitive query using COLLATE NOCASE
+    const integration = await db.get('SELECT * FROM integrations WHERE platformName COLLATE NOCASE = ? AND apiKey = ?', [platform, apiKey]);
+    
+    if (!integration) return res.status(401).json({ error: 'Unauthorized: API Key does not match the Webhook domain.' });
 
-    // Graceful Degradation bypass for Demo setups running without MongoDB
-    if (mongoose.connection.readyState !== 1) {
-       if (apiKey !== 'demo-secret-key') return res.status(401).json({ error: 'Unauthorized: Invalid API Key (Mock Run)' });
-    } else {
-       // Validate against Live Integration Database
-       const integration = await Integration.findOne({ platformName: new RegExp(`^${platform}$`, 'i'), apiKey });
-       if (!integration) return res.status(401).json({ error: 'Unauthorized: API Key does not match the Webhook domain.' });
-       integrationCategory = integration.category;
-       designatedPlatform = integration.platformName;
-    }
+    const integrationCategory = integration.category;
+    const designatedPlatform = integration.platformName;
 
     // Pass data through newly architected Normalization matrix
     const normalizedRows = normalizeFeedback(req.body, designatedPlatform);
@@ -67,7 +68,7 @@ export const receiveWebhook = async (req, res, next) => {
               sentimentScore: aiAnalysis.sentimentScore || 50,
               emotion: aiAnalysis.emotion || 'Unknown',
               userFeelingExplanation: aiAnalysis.userFeelingExplanation || 'No explanation generated',
-              keywords: aiAnalysis.keywords || [],
+              keywords: aiAnalysis.keywords ? JSON.stringify(aiAnalysis.keywords) : '[]',
               summary: aiAnalysis.summary || 'Summary unavailable'
             };
           });
@@ -75,14 +76,26 @@ export const receiveWebhook = async (req, res, next) => {
           processedPayloads.push(...batchResults.filter(Boolean));
         }
 
-        if (mongoose.connection.readyState !== 1) {
-           const mockDocs = processedPayloads.map(p => ({ _id: Date.now().toString() + Math.random().toString(), createdAt: new Date(), ...p }));
-           memoryDb.push(...mockDocs);
-           if (req.io) req.io.emit('new_feedback_received');
-           return;
+        // Insert all processed payloads into db sequentially (or wrap in a transaction inside loop)
+        for (const p of processedPayloads) {
+          await db.run(
+            `INSERT INTO feedbacks (feedbackText, rating, category, platform, sentiment, sentimentScore, emotion, userFeelingExplanation, keywords, summary) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              p.feedbackText,
+              p.rating,
+              p.category,
+              p.platform,
+              p.sentiment,
+              p.sentimentScore,
+              p.emotion,
+              p.userFeelingExplanation,
+              p.keywords,
+              p.summary
+            ]
+          );
         }
-
-        await Feedback.insertMany(processedPayloads);
+        
         if (req.io) req.io.emit('new_feedback_received');
       } catch (err) {
         console.error("Webhook Background Processing Error:", err.message);
