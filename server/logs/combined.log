@@ -1,0 +1,85 @@
+[2026-03-22 17:11:47] info: WebSocket Server running on port 5000
+[2026-03-22 17:12:17] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-22 17:12:52] info: WebSocket Server running on port 5000
+[2026-03-22 17:12:54] info: WebSocket Server running on port 5000
+[2026-03-22 17:13:12] info: WebSocket Server running on port 5000
+[2026-03-22 17:13:42] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-22 17:13:54] info: WebSocket Server running on port 5000
+[2026-03-22 17:13:57] info: WebSocket Server running on port 5000
+[2026-03-22 17:14:27] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-22 17:14:44] info: WebSocket Server running on port 5000
+[2026-03-22 17:15:14] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-22 17:16:23] info: WebSocket Server running on port 5000
+[2026-03-22 17:16:53] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-22 17:23:51] info: WebSocket Server running on port 5000
+[2026-03-22 17:24:21] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-22 18:49:26] info: WebSocket Server running on port 5000
+[2026-03-22 18:49:56] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-22 18:50:09] info: 🟢 New Client Socket Connected
+[2026-03-22 18:50:18] info: 🔴 Client Socket Disconnected
+[2026-03-22 18:51:58] info: 🟢 New Client Socket Connected
+[2026-03-22 18:52:15] info: 🔴 Client Socket Disconnected
+[2026-03-22 18:52:39] info: 🟢 New Client Socket Connected
+[2026-03-22 18:52:47] info: 🔴 Client Socket Disconnected
+[2026-03-22 18:52:47] info: 🟢 New Client Socket Connected
+[2026-03-22 18:52:49] info: 🔴 Client Socket Disconnected
+[2026-03-22 18:52:49] info: 🟢 New Client Socket Connected
+[2026-03-22 18:52:51] info: 🔴 Client Socket Disconnected
+[2026-03-22 18:52:51] info: 🟢 New Client Socket Connected
+[2026-03-22 18:52:53] info: 🔴 Client Socket Disconnected
+[2026-03-22 18:52:53] info: 🟢 New Client Socket Connected
+[2026-03-22 18:52:55] info: 🔴 Client Socket Disconnected
+[2026-03-22 23:09:21] info: 🟢 New Client Socket Connected
+[2026-03-22 23:09:36] info: 🔴 Client Socket Disconnected
+[2026-03-22 23:09:36] info: 🟢 New Client Socket Connected
+[2026-03-22 23:11:51] info: 🔴 Client Socket Disconnected
+[2026-03-22 23:16:45] info: 🟢 New Client Socket Connected
+[2026-03-22 23:17:02] info: 🔴 Client Socket Disconnected
+[2026-03-24 23:57:56] info: WebSocket Server running on port 5000
+[2026-03-24 23:58:26] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-25 00:17:28] info: WebSocket Server running on port 5000
+[2026-03-25 00:17:58] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-25 00:25:49] info: WebSocket Server running on port 5000
+[2026-03-25 00:26:19] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-25 00:27:40] info: 🟢 New Client Socket Connected
+[2026-03-25 00:29:17] info: 🔴 Client Socket Disconnected
+[2026-03-25 00:29:25] info: 🟢 New Client Socket Connected
+[2026-03-25 00:31:35] info: WebSocket Server running on port 5000
+[2026-03-25 00:31:35] info: 🟢 New Client Socket Connected
+[2026-03-25 00:31:36] info: 🔴 Client Socket Disconnected
+[2026-03-25 00:31:36] info: 🟢 New Client Socket Connected
+[2026-03-25 00:32:05] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-25 00:32:42] info: 🔴 Client Socket Disconnected
+[2026-03-25 00:33:11] info: 🟢 New Client Socket Connected
+[2026-03-25 00:33:31] info: 🔴 Client Socket Disconnected
+[2026-03-25 00:35:25] info: 🟢 New Client Socket Connected
+[2026-03-25 00:35:37] info: 🔴 Client Socket Disconnected
+[2026-03-25 00:35:37] info: 🟢 New Client Socket Connected
+[2026-03-25 00:38:11] info: WebSocket Server running on port 5000
+[2026-03-25 00:38:13] info: 🟢 New Client Socket Connected
+[2026-03-25 00:38:41] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-25 00:40:13] info: 🔴 Client Socket Disconnected
+[2026-03-25 00:40:13] info: 🟢 New Client Socket Connected
+[2026-03-25 00:40:17] info: 🔴 Client Socket Disconnected
+[2026-03-25 00:40:20] info: 🟢 New Client Socket Connected
+[2026-03-25 00:44:52] info: 🔴 Client Socket Disconnected
+[2026-03-25 00:47:36] info: WebSocket Server running on port 5000
+[2026-03-25 00:48:06] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-25 00:48:52] info: 🟢 New Client Socket Connected
+[2026-03-25 00:49:39] info: 🔴 Client Socket Disconnected
+[2026-03-25 00:50:41] info: 🟢 New Client Socket Connected
+[2026-03-25 00:51:04] info: 🔴 Client Socket Disconnected
+[2026-03-25 00:54:04] info: 🟢 New Client Socket Connected
+[2026-03-25 00:54:30] info: 🔴 Client Socket Disconnected
+[2026-03-25 00:54:31] info: 🟢 New Client Socket Connected
+[2026-03-25 00:56:34] info: WebSocket Server running on port 5000
+[2026-03-25 00:56:34] info: 🟢 New Client Socket Connected
+[2026-03-25 00:57:04] warn: MongoDB connection error details (Mock RAM DB will be used): connect ECONNREFUSED 127.0.0.1:27017
+[2026-03-25 02:14:59] info: 🔴 Client Socket Disconnected
+[2026-03-25 02:15:04] info: 🟢 New Client Socket Connected
+[2026-03-25 02:15:20] info: 🔴 Client Socket Disconnected
+[2026-03-25 02:16:11] info: 🟢 New Client Socket Connected
+[2026-03-25 02:16:17] info: 🔴 Client Socket Disconnected
+[2026-03-25 02:16:23] info: 🟢 New Client Socket Connected
+[2026-03-25 02:16:29] info: 🔴 Client Socket Disconnected
+[2026-03-25 02:22:04] info: WebSocket Server running on port 5000

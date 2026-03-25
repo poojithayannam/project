@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-darkBg text-white font-sans antialiased overflow-x-hidden;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply bg-cardBg backdrop-blur-xl border border-white/5 shadow-xl;
+  }
+  .heading-display {
+    @apply font-display font-bold tracking-tight;
+  }
+}
