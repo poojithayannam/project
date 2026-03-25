@@ -1,18 +1,29 @@
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
+import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let dbInstance = null;
+
+// better-sqlite3 is synchronous, so we wrap it in an async-compatible interface
+// to keep the rest of the codebase unchanged.
+const wrapDb = (db) => ({
+  run: (sql, params = []) => Promise.resolve(db.prepare(sql).run(params)),
+  get: (sql, params = []) => Promise.resolve(db.prepare(sql).get(params)),
+  all: (sql, params = []) => Promise.resolve(db.prepare(sql).all(params)),
+  exec: (sql) => Promise.resolve(db.exec(sql)),
+});
 
 export const initDb = async () => {
   if (dbInstance) return dbInstance;
 
-  dbInstance = await open({
-    filename: './database.sqlite',
-    driver: sqlite3.Database
-  });
+  const dbPath = path.join(__dirname, 'database.sqlite');
+  const rawDb = new Database(dbPath);
+  rawDb.pragma('journal_mode = WAL');
 
-  await dbInstance.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       email TEXT UNIQUE NOT NULL,
@@ -43,7 +54,7 @@ export const initDb = async () => {
     CREATE TABLE IF NOT EXISTS integrations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       platformName TEXT UNIQUE NOT NULL,
-      apiKey TEXT UNIQUE NOT NULL,
+      apiKey TEXT NOT NULL,
       category TEXT DEFAULT 'General',
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -54,6 +65,8 @@ export const initDb = async () => {
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  dbInstance = wrapDb(rawDb);
 
   // Seed default admin user
   const adminExists = await dbInstance.get('SELECT id FROM users WHERE email = ?', ['admin@test.com']);
@@ -74,11 +87,11 @@ export const initDb = async () => {
   // Seed all mock integrations for the web simulator
   const platforms = ['Amazon', 'Zomato', 'Flipkart'];
   for (const plat of platforms) {
-      const exists = await dbInstance.get('SELECT id FROM integrations WHERE platformName = ?', [plat]);
-      if (!exists) {
-          await dbInstance.run('INSERT INTO integrations (platformName, apiKey, category) VALUES (?, ?, ?)', [plat, 'demo-secret-key', 'E-commerce']);
-          console.log(`✅ Demo ${plat} Simulator Integration seeded (demo-secret-key)`);
-      }
+    const exists = await dbInstance.get('SELECT id FROM integrations WHERE platformName = ?', [plat]);
+    if (!exists) {
+      await dbInstance.run('INSERT INTO integrations (platformName, apiKey, category) VALUES (?, ?, ?)', [plat, 'demo-secret-key', 'E-commerce']);
+      console.log(`✅ Demo ${plat} Simulator Integration seeded (demo-secret-key)`);
+    }
   }
 
   return dbInstance;
