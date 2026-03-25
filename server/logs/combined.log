@@ -126,3 +126,7 @@
 [2026-03-26 02:27:36] info: 🔴 Client Socket Disconnected
 [2026-03-26 02:27:39] info: 🟢 New Client Socket Connected
 [2026-03-26 02:27:40] info: 🔴 Client Socket Disconnected
+[2026-03-26 03:01:45] error: Database initialization failed: UNIQUE constraint failed: integrations.apiKey
+[2026-03-26 03:01:45] info: WebSocket Server running on port 5000
+[2026-03-26 03:10:45] error: Database initialization failed: UNIQUE constraint failed: integrations.apiKey
+[2026-03-26 03:10:45] info: WebSocket Server running on port 5000

@@ -10,7 +10,10 @@ let dbInstance = null;
 // better-sqlite3 is synchronous, so we wrap it in an async-compatible interface
 // to keep the rest of the codebase unchanged.
 const wrapDb = (db) => ({
-  run: (sql, params = []) => Promise.resolve(db.prepare(sql).run(params)),
+  run: (sql, params = []) => {
+    const stmt = db.prepare(sql).run(params);
+    return Promise.resolve({ lastID: stmt.lastInsertRowid, changes: stmt.changes });
+  },
   get: (sql, params = []) => Promise.resolve(db.prepare(sql).get(params)),
   all: (sql, params = []) => Promise.resolve(db.prepare(sql).all(params)),
   exec: (sql) => Promise.resolve(db.exec(sql)),
